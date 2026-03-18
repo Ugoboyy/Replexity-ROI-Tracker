@@ -6,7 +6,7 @@ import StatusBadge from "@/components/StatusBadge";
 
 import { fmt$ } from "@/lib/format";
 
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+const ADMIN_PASSWORD = (process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "").trim();
 
 export default function AdminPage() {
   /* ── auth ── */
@@ -68,7 +68,7 @@ export default function AdminPage() {
   /* ── password check ── */
   function handleLogin(e) {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    if (password.trim() === ADMIN_PASSWORD) {
       setAuthenticated(true);
       setAuthError("");
       sessionStorage.setItem("reflexity_admin", "true");

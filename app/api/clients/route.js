@@ -9,7 +9,8 @@ function generateCode() {
 }
 
 function isAdmin(req) {
-  return req.headers.get("X-Admin-Key") === process.env.ADMIN_KEY;
+  const key = (process.env.ADMIN_KEY || "").trim();
+  return req.headers.get("X-Admin-Key")?.trim() === key;
 }
 
 /* ══════════════ GET ══════════════ */
