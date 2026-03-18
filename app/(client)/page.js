@@ -160,7 +160,7 @@ export default function CodeEntryPage() {
           }}
           className="text-[#7C3AED] hover:text-[#6D28D9] text-sm font-medium transition-colors"
         >
-          Forgot my code?
+          Forgot your code?
         </button>
 
         {/* Forgot code panel */}

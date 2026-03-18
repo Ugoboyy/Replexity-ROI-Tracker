@@ -50,7 +50,7 @@ export default function MobileNav({ activeTab, clientCode, onShare }) {
     {
       key: "help",
       label: "Help",
-      href: "https://calendly.com/reflexity",
+      href: "https://wa.me/",
       external: true,
       icon: (
         /* question-mark-circle */
@@ -84,7 +84,7 @@ export default function MobileNav({ activeTab, clientCode, onShare }) {
             );
           }
 
-          /* External link (Help / Calendly) */
+          /* External link (Help / WhatsApp) */
           if (item.external) {
             return (
               <a
