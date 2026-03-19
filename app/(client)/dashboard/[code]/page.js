@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [dismissedBanner, setDismissedBanner] = useState(false);
 
   /* ── fetch data ── */
   useEffect(() => {
@@ -155,7 +156,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <main className="max-w-6xl mx-auto px-4 pb-20 space-y-6 mt-4">
+      <main className="max-w-6xl mx-auto px-4 pb-28 md:pb-20 space-y-6 mt-4">
 
         {/* ── HERO STAT ── */}
         <section className="text-center py-6">
@@ -233,34 +234,48 @@ export default function DashboardPage() {
           </button>
         </section>
 
-        {/* ── MOBILE STICKY BUTTONS (below content, above nav) ── */}
-        <section className="fixed bottom-14 left-0 right-0 z-30 bg-[#0F172A]/95 border-t border-[#334155] px-4 py-3 md:hidden">
-          {client.status === "active" && !alreadyLogged ? (
+        {/* ── MOBILE: inline "already logged" banner (dismissible) ── */}
+        {client.status === "active" && alreadyLogged && !dismissedBanner && (
+          <section className="md:hidden bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-3 relative">
+            <button
+              type="button"
+              onClick={() => setDismissedBanner(true)}
+              className="absolute top-2 right-2 text-slate-500 hover:text-slate-300 transition-colors p-1"
+              aria-label="Dismiss"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <p className="text-slate-400 text-sm text-center pr-6">
+              Already logged this period. Come back next {periodWord.toLowerCase()}.
+            </p>
+            {nextDeadline && (
+              <p className="text-slate-500 text-xs mt-1 text-center">
+                Next log opens{" "}
+                {nextDeadline.toLocaleString("en-US", {
+                  timeZone: userTz,
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}{" "}
+                ({userTz})
+              </p>
+            )}
+          </section>
+        )}
+
+        {/* ── MOBILE: fixed "Log This Week" CTA (only when not yet logged) ── */}
+        {client.status === "active" && !alreadyLogged && (
+          <section className="fixed bottom-14 left-0 right-0 z-30 bg-[#0F172A]/95 border-t border-[#334155] px-4 py-3 md:hidden">
             <Link
               href={`/log/${code}`}
               className="flex items-center justify-center w-full h-11 rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-semibold transition-colors"
             >
               Log This {periodWord}
             </Link>
-          ) : client.status === "active" && alreadyLogged ? (
-            <div className="text-center py-2">
-              <p className="text-slate-400 text-sm">
-                Already logged this period. Come back next {periodWord.toLowerCase()}.
-              </p>
-              {nextDeadline && (
-                <p className="text-slate-500 text-xs mt-1">
-                  Next log opens{" "}
-                  {nextDeadline.toLocaleString("en-US", {
-                    timeZone: userTz,
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}{" "}
-                  ({userTz})
-                </p>
-              )}
-            </div>
-          ) : null}
-        </section>
+          </section>
+        )}
       </main>
 
       {/* ── MOBILE NAV ── */}
