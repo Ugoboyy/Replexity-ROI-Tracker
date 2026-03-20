@@ -116,7 +116,7 @@ export default function AdminPage() {
         typeof window !== "undefined" ? window.location.origin : "";
       setSuccess({
         code: data.code,
-        url: `${baseUrl}/dashboard/${data.code}`,
+        url: `${baseUrl}/dashboard/${data.slug}`,
       });
 
       // Reset form
@@ -510,7 +510,7 @@ export default function AdminPage() {
                   {/* Row 4 – actions */}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <a
-                      href={`/dashboard/${c.code}`}
+                      href={`/dashboard/${c.slug || c.code}`}
                       target="_blank"
                       rel="noopener"
                       className="text-xs px-3 py-1.5 rounded-lg bg-purple-600/20 text-purple-300 hover:bg-purple-600/40 transition-colors"
@@ -607,7 +607,7 @@ export default function AdminPage() {
                       <td className="py-3 px-3">
                         <div className="flex gap-2">
                           <a
-                            href={`/dashboard/${c.code}`}
+                            href={`/dashboard/${c.slug || c.code}`}
                             target="_blank"
                             rel="noopener"
                             className="text-xs px-2 py-1 rounded bg-purple-600/20 text-purple-300 hover:bg-purple-600/40 transition-colors"

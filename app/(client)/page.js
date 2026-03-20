@@ -63,7 +63,9 @@ export default function CodeEntryPage() {
         return;
       }
 
-      router.push(`/dashboard/${trimmed}`);
+      // Redirect to slug-based URL (fall back to code if no slug)
+      const dest = data.client.slug || trimmed;
+      router.push(`/dashboard/${dest}`);
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);

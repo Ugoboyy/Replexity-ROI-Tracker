@@ -21,7 +21,7 @@ export async function POST(req) {
     const normalised = email.trim().toLowerCase();
 
     const { rows } = await query(
-      "SELECT code, status FROM clients WHERE LOWER(email) = $1",
+      "SELECT code, slug, status FROM clients WHERE LOWER(email) = $1",
       [normalised]
     );
 

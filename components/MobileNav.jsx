@@ -5,9 +5,9 @@ import Link from "next/link";
 /**
  * Fixed bottom navigation bar for mobile screens.
  *
- * @param {{ activeTab: string, clientCode: string, onShare?: () => void }} props
+ * @param {{ activeTab: string, clientCode: string, onShare?: () => void, onSignOut?: () => void }} props
  */
-export default function MobileNav({ activeTab, clientCode, onShare }) {
+export default function MobileNav({ activeTab, clientCode, onShare, onSignOut }) {
   const items = [
     {
       key: "dashboard",
@@ -48,16 +48,14 @@ export default function MobileNav({ activeTab, clientCode, onShare }) {
       ),
     },
     {
-      key: "help",
-      label: "Help",
-      href: "https://wa.me/",
-      external: true,
+      key: "signout",
+      label: "Sign Out",
       icon: (
-        /* question-mark-circle */
+        /* box-arrow-right / log-out */
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-          <circle cx="12" cy="17" r="0.5" fill="currentColor" />
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
         </svg>
       ),
     },
@@ -84,19 +82,17 @@ export default function MobileNav({ activeTab, clientCode, onShare }) {
             );
           }
 
-          /* External link (Help / WhatsApp) */
-          if (item.external) {
+          /* Sign Out button — triggers callback */
+          if (item.key === "signout") {
             return (
-              <a
+              <button
                 key={item.key}
-                href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={onSignOut}
                 className={`flex flex-col items-center justify-center gap-0.5 flex-1 ${color}`}
               >
                 {item.icon}
                 <span className="text-[10px] leading-tight">{item.label}</span>
-              </a>
+              </button>
             );
           }
 

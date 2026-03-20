@@ -32,7 +32,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const cRes = await fetch(`/api/clients?code=${code}`);
+        const cRes = await fetch(`/api/clients?slug=${code}`);
         if (cRes.status === 404) {
           setErrorMsg("Client not found. Please check your code.");
           setLoading(false);
@@ -144,6 +144,18 @@ export default function DashboardPage() {
         <div className="flex items-center gap-1.5 shrink-0">
           <FrequencyBadge frequency={logFrequency} />
           <StatusBadge status={client.status} />
+          <button
+            onClick={() => router.push("/")}
+            className="hidden md:flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg text-xs text-slate-300 border border-slate-600 hover:bg-slate-700 transition-colors"
+            title="Sign out"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Sign Out
+          </button>
         </div>
       </header>
 
@@ -283,6 +295,7 @@ export default function DashboardPage() {
         activeTab="dashboard"
         clientCode={code}
         onShare={() => setShowModal(true)}
+        onSignOut={() => router.push("/")}
       />
 
       {/* ── TESTIMONIAL MODAL ── */}

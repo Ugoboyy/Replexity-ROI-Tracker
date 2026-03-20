@@ -8,6 +8,13 @@ function generateCode() {
   return result;
 }
 
+function toSlug(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function isAdmin(req) {
   const key = (process.env.ADMIN_KEY || "").trim();
   return req.headers.get("X-Admin-Key")?.trim() === key;
@@ -17,6 +24,26 @@ function isAdmin(req) {
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
+  const slug = searchParams.get("slug");
+
+  if (slug) {
+    try {
+      const { rows } = await query("SELECT * FROM clients WHERE slug = $1", [
+        slug.toLowerCase(),
+      ]);
+      if (!rows.length) {
+        return Response.json({ error: "Client not found" }, { status: 404 });
+      }
+      const client = rows[0];
+      if (client.status === "revoked") {
+        return Response.json({ error: "Access has been removed." }, { status: 403 });
+      }
+      return Response.json({ client });
+    } catch (error) {
+      console.error("Client lookup error:", error);
+      return Response.json({ error: "Server error" }, { status: 500 });
+    }
+  }
 
   if (code) {
     try {
@@ -37,7 +64,7 @@ export async function GET(req) {
     }
   }
 
-  // No code param and no admin key → reject
+  // No code/slug param and no admin key → reject
   return Response.json({ error: "Code parameter required" }, { status: 400 });
 }
 
@@ -77,16 +104,30 @@ export async function POST(req) {
         attempts++;
       }
 
+      // Generate unique slug from client name
+      const baseSlug = toSlug(client_name);
+      let slug = baseSlug;
+      let slugAttempts = 0;
+      while (slugAttempts < 20) {
+        const { rows: existing } = await query(
+          "SELECT id FROM clients WHERE slug = $1",
+          [slug]
+        );
+        if (!existing.length) break;
+        slugAttempts++;
+        slug = `${baseSlug}-${slugAttempts}`;
+      }
+
       const { rows } = await query(
         `INSERT INTO clients
-           (id, code, client_name, client_type, automation_type, deployment_date,
+           (id, code, slug, client_name, client_type, automation_type, deployment_date,
             project_cost, log_frequency, notes, email, status)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, 'active')
-         RETURNING id, code`,
-        [code, client_name, client_type || null, automation_type, deployment_date, project_cost, log_frequency || "weekly", notes || null, email ? email.trim().toLowerCase() : null]
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active')
+         RETURNING id, code, slug`,
+        [code, slug, client_name, client_type || null, automation_type, deployment_date, project_cost, log_frequency || "weekly", notes || null, email ? email.trim().toLowerCase() : null]
       );
 
-      return Response.json({ code: rows[0].code, client_id: rows[0].id });
+      return Response.json({ code: rows[0].code, slug: rows[0].slug, client_id: rows[0].id });
     }
 
     /* ── freeze ── */

@@ -146,7 +146,7 @@ export default function LogPage() {
   useEffect(() => {
     async function load() {
       try {
-        const cRes = await fetch(`/api/clients?code=${code}`);
+        const cRes = await fetch(`/api/clients?slug=${code}`);
         const cData = await cRes.json();
         if (cData.error || !cData.client) {
           setError(cData.error || "Client not found.");
@@ -652,7 +652,7 @@ export default function LogPage() {
       </main>
 
       {/* MOBILE NAV */}
-      <MobileNav activeTab="log" clientCode={code} />
+      <MobileNav activeTab="log" clientCode={code} onSignOut={() => router.push("/")} />
 
       {/* Global input styles */}
       <style jsx global>{`
