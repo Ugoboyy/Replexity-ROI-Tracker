@@ -176,11 +176,11 @@ export default function DashboardPage() {
       <main className="max-w-6xl mx-auto px-4 pb-28 md:pb-20 space-y-6 mt-4">
 
         {/* ── DYNAMIC GREETING + DATE ── */}
-        <div className="text-right pr-1 mb-[30px] space-y-1">
-          <p className="text-white font-semibold text-[18px] lg:text-[20px] leading-[1.2] whitespace-nowrap tracking-[-0.01em]">
+        <div className="text-right pr-1 mb-[25px] space-y-1">
+          <p className="text-white font-semibold text-[14px] lg:text-[20px] leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis tracking-[-0.01em]">
             {greeting}, {client.client_name}
           </p>
-          <p className="text-slate-400 font-normal text-[16px] lg:text-[20px] leading-[1.2]">
+          <p className="text-slate-400 font-normal text-[12px] lg:text-[20px] leading-[1.2]">
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </p>
         </div>
