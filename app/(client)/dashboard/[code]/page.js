@@ -175,10 +175,15 @@ export default function DashboardPage() {
 
       <main className="max-w-6xl mx-auto px-4 pb-28 md:pb-20 space-y-6 mt-4">
 
-        {/* ── DYNAMIC GREETING ── */}
-        <p className="text-white font-semibold text-[20px] lg:text-[30px] text-right pr-1 pb-[25px]">
-          {greeting}, {client.client_name}
-        </p>
+        {/* ── DYNAMIC GREETING + DATE ── */}
+        <div className="text-right pr-1 mb-[30px]">
+          <p className="text-white font-semibold text-[20px] lg:text-[30px] leading-[1.2]">
+            {greeting}, {client.client_name}
+          </p>
+          <p className="text-slate-400 font-normal lg:font-normal text-[10px] lg:text-[20px] leading-[1.2]">
+            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          </p>
+        </div>
 
         {/* ── HERO STAT ── */}
         <section className="text-center py-6">
