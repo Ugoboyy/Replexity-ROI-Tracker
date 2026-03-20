@@ -138,7 +138,7 @@ export default function DashboardPage() {
           alt="Reflexity"
           className="h-[58px] md:h-[60px] w-auto shrink-0"
         />
-        <h1 className="text-white font-semibold text-[20px] lg:text-[50px] lg:leading-[1.1] whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1 min-w-0">
+        <h1 className="text-white font-semibold text-[20px] lg:text-[40px] lg:leading-[1.1] whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1 min-w-0">
           {client.client_name}
         </h1>
         <div className="flex items-center gap-1.5 shrink-0">
