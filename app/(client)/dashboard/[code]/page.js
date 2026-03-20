@@ -77,6 +77,14 @@ export default function DashboardPage() {
     ? Intl.DateTimeFormat().resolvedOptions().timeZone
     : "UTC";
 
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h >= 5 && h < 12) return "Good morning";
+    if (h >= 12 && h < 17) return "Good afternoon";
+    if (h >= 17 && h < 22) return "Good evening";
+    return "Welcome";
+  }, []);
+
   const { totalHours, totalMoney, totalPeriods, roi, avgSat } = useMemo(() => {
     let hours = 0;
     let money = 0;
@@ -167,9 +175,9 @@ export default function DashboardPage() {
 
       <main className="max-w-6xl mx-auto px-4 pb-28 md:pb-20 space-y-6 mt-4">
 
-        {/* ── WELCOME GREETING ── */}
-        <p className="text-white font-semibold text-[20px] lg:text-[30px] text-right pr-1 mb-6">
-          Welcome, {client.client_name}
+        {/* ── DYNAMIC GREETING ── */}
+        <p className="text-white font-semibold text-[20px] lg:text-[30px] text-right pr-1 pb-[25px]">
+          {greeting}, {client.client_name}
         </p>
 
         {/* ── HERO STAT ── */}
