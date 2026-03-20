@@ -177,10 +177,10 @@ export default function DashboardPage() {
 
         {/* ── DYNAMIC GREETING + DATE ── */}
         <div className="text-right pr-1 mb-[30px]">
-          <p className="text-white font-semibold text-[20px] lg:text-[30px] leading-[1.2]">
+          <p className="text-white font-semibold text-[10px] lg:text-[20px] leading-[1.2] whitespace-nowrap">
             {greeting}, {client.client_name}
           </p>
-          <p className="text-slate-400 font-normal lg:font-normal text-[10px] lg:text-[20px] leading-[1.2]">
+          <p className="text-slate-400 font-normal text-[10px] lg:text-[16px] leading-[1.2]">
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </p>
         </div>
