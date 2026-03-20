@@ -105,14 +105,19 @@ export default function CodeEntryPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-md text-center space-y-6">
-        {/* Logo */}
+    <main className="min-h-screen flex flex-col">
+      {/* Top-centered logo */}
+      <div className="flex justify-center pt-6">
         <img
           src="/reflexity-logo.png"
           alt="Reflexity"
-          className="h-[70px] md:h-[80px] w-auto mx-auto"
+          className="h-[70px] md:h-[80px] w-auto"
         />
+      </div>
+
+      {/* Vertically & horizontally centered content */}
+      <div className="flex-1 flex items-center justify-center px-4 pb-20">
+      <div className="w-full max-w-md text-center space-y-6">
 
         {/* Heading */}
         <h1 className="text-4xl font-bold text-white">ROI Tracker</h1>
@@ -148,7 +153,7 @@ export default function CodeEntryPage() {
             disabled={loading}
             className="w-full py-3 rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-semibold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Checking…" : "View My Dashboard"}
+            {loading ? "Checking…" : "SIGN IN"}
           </button>
         </form>
 
@@ -214,6 +219,7 @@ export default function CodeEntryPage() {
             </form>
           </div>
         )}
+      </div>
       </div>
     </main>
   );
