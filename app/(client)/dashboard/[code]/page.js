@@ -132,15 +132,12 @@ export default function DashboardPage() {
   return (
     <>
       {/* ── STICKY HEADER (single row) ── */}
-      <header className="sticky top-0 z-40 bg-[#1E293B] border-b border-[#334155] px-4 py-3 flex items-center gap-3">
+      <header className="sticky top-0 z-40 bg-[#1E293B] border-b border-[#334155] px-4 py-3 flex items-center justify-between">
         <img
           src="/reflexity-logo.png"
           alt="Reflexity"
           className="h-[58px] md:h-[60px] w-auto shrink-0"
         />
-        <h1 className="text-white font-semibold text-[20px] lg:text-[40px] lg:leading-[1.1] whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1 min-w-0">
-          {client.client_name}
-        </h1>
         <div className="flex items-center gap-1.5 shrink-0">
           <FrequencyBadge frequency={logFrequency} />
           <StatusBadge status={client.status} />
@@ -169,6 +166,11 @@ export default function DashboardPage() {
       )}
 
       <main className="max-w-6xl mx-auto px-4 pb-28 md:pb-20 space-y-6 mt-4">
+
+        {/* ── WELCOME GREETING ── */}
+        <p className="text-white font-semibold text-[20px] lg:text-[30px] text-right pr-1 mb-6">
+          Welcome, {client.client_name}
+        </p>
 
         {/* ── HERO STAT ── */}
         <section className="text-center py-6">
