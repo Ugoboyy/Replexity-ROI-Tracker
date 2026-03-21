@@ -180,7 +180,7 @@ export default function DashboardPage() {
           <p className="text-white font-semibold text-[14px] lg:text-[20px] leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis tracking-[-0.01em]">
             {greeting}, {client.client_name}
           </p>
-          <p className="text-slate-400 font-normal text-[12px] lg:text-[20px] leading-[1.2]">
+          <p className="text-slate-400 lg:text-slate-400/80 font-normal text-[12px] lg:text-[18px] leading-[1.2]">
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </p>
         </div>
