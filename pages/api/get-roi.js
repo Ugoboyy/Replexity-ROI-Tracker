@@ -93,10 +93,11 @@ export default async function handler(req, res) {
     // roi_ratio: how many "billable hours" were freed (dollar value ÷ hourly rate = hours)
     const roiRatio          = parseFloat(totalHoursSaved.toFixed(1));
     // roi_percent: automation return relative to one hour of work
-    // Guard against divide-by-zero if hourlyRate is somehow 0
-    const roiPercent        = hourlyRate > 0
-      ? (((dollarValue / hourlyRate) - 1) * 100).toFixed(0)
-      : "0";
+    // Guard: 0 executions → "0" (avoids misleading -100% for new clients)
+    // Guard: hourlyRate = 0 → "0" (divide-by-zero protection)
+    const roiPercent        = (totalExecutions === 0 || hourlyRate === 0)
+      ? "0"
+      : (((dollarValue / hourlyRate) - 1) * 100).toFixed(0);
 
     // Top workflow by execution count
     const workflowCounts = {};
