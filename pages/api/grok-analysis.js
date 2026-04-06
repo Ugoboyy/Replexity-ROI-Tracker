@@ -1,5 +1,5 @@
-const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
-const GROK_MODEL   = "grok-3-latest";
+const GROK_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROK_MODEL   = "llama-3.3-70b-versatile";
 
 const SYSTEM_PROMPT = `You are a senior AI automation strategist and ROI analyst for Reflexity, \
 a premium AI automation community. You analyse client automation performance data and deliver \
