@@ -92,14 +92,31 @@ export default function DemoClientPage() {
 
     setClaiming(true);
     try {
-      const res = await fetch("/api/claim-executions", {
+      // Step 1: claim the anonymous executions
+      const claimRes = await fetch("/api/claim-executions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: trimmed }),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || "Claim failed.");
-      router.push(`/dashboard/${trimmed}`);
+      const claimData = await claimRes.json();
+      if (!claimData.success) throw new Error(claimData.error || "Claim failed.");
+
+      // Step 2: look up the client's slug so we land on the correct dashboard URL
+      const clientRes = await fetch(`/api/clients?code=${encodeURIComponent(trimmed)}`);
+      if (clientRes.ok) {
+        const clientData = await clientRes.json();
+        const slug = clientData.client?.slug;
+        if (slug) {
+          router.push(`/dashboard/${slug}`);
+          return;
+        }
+      }
+
+      // Fallback: slug not found — send to home so they can log in normally
+      setClaimError(
+        `Your data has been claimed! Log in at the home page to access your dashboard.`
+      );
+      setClaiming(false);
     } catch (err) {
       setClaimError(err.message || "Something went wrong. Please try again.");
       setClaiming(false);
@@ -148,9 +165,8 @@ export default function DemoClientPage() {
         <section className="bg-[#1E293B] border border-[#7C3AED]/40 rounded-2xl p-6 shadow-lg shadow-[#7C3AED]/5">
           <h2 className="text-white font-bold text-lg mb-1">Claim Your Automation Data</h2>
           <p className="text-slate-400 text-sm mb-5">
-            Enter your Reflexity User ID (e.g.{" "}
-            <span className="text-slate-300 font-mono">RFX-A7K1</span>) to link
-            all anonymous runs to your account and unlock your personal dashboard.
+            Enter your Reflexity User ID to link all anonymous runs to your account
+            and unlock your personal dashboard.
           </p>
 
           <form onSubmit={handleClaim} className="flex flex-col sm:flex-row gap-3">

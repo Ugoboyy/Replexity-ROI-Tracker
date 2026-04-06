@@ -23,41 +23,48 @@ export default async function handler(req, res) {
   try {
     const days = period === "monthly" ? 30 : 7;
 
-    // Fetch this user's executions for the period (with benchmark join)
-    const userExecResult = await pool.query(
-      `SELECT e.id,
-              e.user_id,
-              e.workflow_name,
-              e.created_at,
-              COALESCE(wb.minutes_saved, 5)  AS minutes_saved,
-              COALESCE(wb.category, 'Uncategorised') AS category
-       FROM   executions e
-       LEFT JOIN workflow_benchmarks wb
-              ON LOWER(TRIM(e.workflow_name)) = LOWER(TRIM(wb.workflow_name))
-       WHERE  e.user_id = $1
-         AND  e.created_at >= NOW() - ($2 * INTERVAL '1 day')`,
+    // Helper: run query with benchmark JOIN; on 'relation does not exist', retry without JOIN
+    async function fetchExecutions(whereClause, params) {
+      const withJoin = `
+        SELECT e.id, e.user_id, e.workflow_name, e.created_at,
+               COALESCE(wb.minutes_saved, 5)           AS minutes_saved,
+               COALESCE(wb.category, 'Uncategorised')  AS category
+        FROM   executions e
+        LEFT JOIN workflow_benchmarks wb
+               ON LOWER(TRIM(e.workflow_name)) = LOWER(TRIM(wb.workflow_name))
+        WHERE  ${whereClause}`;
+      try {
+        const r = await pool.query(withJoin, params);
+        return r.rows;
+      } catch (err) {
+        // workflow_benchmarks does not exist yet — fall back to plain query with defaults
+        if (err.message && err.message.includes("workflow_benchmarks")) {
+          const noJoin = `
+            SELECT e.id, e.user_id, e.workflow_name, e.created_at,
+                   5               AS minutes_saved,
+                   'Uncategorised' AS category
+            FROM   executions e
+            WHERE  ${whereClause}`;
+          const r2 = await pool.query(noJoin, params);
+          return r2.rows;
+        }
+        throw err;
+      }
+    }
+
+    // Fetch this user's executions for the period
+    let executions = await fetchExecutions(
+      "e.user_id = $1 AND e.created_at >= NOW() - ($2 * INTERVAL '1 day')",
       [String(user_id).trim(), days]
     );
 
-    let executions = userExecResult.rows;
-
     // Fallback: supplement with anonymous rows when user has < 3 executions
     if (executions.length < 3) {
-      const anonResult = await pool.query(
-        `SELECT e.id,
-                e.user_id,
-                e.workflow_name,
-                e.created_at,
-                COALESCE(wb.minutes_saved, 5)  AS minutes_saved,
-                COALESCE(wb.category, 'Uncategorised') AS category
-         FROM   executions e
-         LEFT JOIN workflow_benchmarks wb
-                ON LOWER(TRIM(e.workflow_name)) = LOWER(TRIM(wb.workflow_name))
-         WHERE  e.user_id = 'anonymous'
-           AND  e.created_at >= NOW() - ($1 * INTERVAL '1 day')`,
+      const anonRows = await fetchExecutions(
+        "e.user_id = 'anonymous' AND e.created_at >= NOW() - ($1 * INTERVAL '1 day')",
         [days]
       );
-      executions = [...executions, ...anonResult.rows];
+      executions = [...executions, ...anonRows];
     }
 
     // User settings (hourly_rate, membership_cost) — silently fall back if table absent
