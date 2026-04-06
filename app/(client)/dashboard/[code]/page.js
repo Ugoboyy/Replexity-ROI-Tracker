@@ -22,7 +22,6 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [client, setClient] = useState(null);
-  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -65,12 +64,6 @@ export default function DashboardPage() {
           return;
         }
         setClient(cData.client);
-
-        const freq = cData.client.log_frequency || cData.client.tracking_frequency || "weekly";
-        const logType = freq === "monthly" ? "monthly" : "weekly";
-        const lRes = await fetch(`/api/logs?client_id=${cData.client.id}&type=${logType}`);
-        const lData = await lRes.json();
-        setLogs(lData.logs || []);
       } catch (err) {
         console.error(err);
         setErrorMsg("Something went wrong. Please try again.");
@@ -129,33 +122,6 @@ export default function DashboardPage() {
     if (h >= 17 && h < 22) return "Good evening";
     return "Welcome";
   }, []);
-
-  const { totalHours, totalMoney, totalPeriods, roi, avgSat } = useMemo(() => {
-    let hours = 0;
-    let money = 0;
-    let satSum = 0;
-    let satCount = 0;
-
-    logs.forEach((log) => {
-      hours += Number(log.hours_saved || 0);
-      money += Number(log.money_saved || 0);
-      if (log.satisfaction) {
-        satSum += Number(log.satisfaction);
-        satCount++;
-      }
-    });
-
-    const cost = Math.max(Number(client?.project_cost || 0), 1);
-    const roiVal = ((money - cost) / cost) * 100;
-
-    return {
-      totalHours: Math.round(hours * 10) / 10,
-      totalMoney: money,
-      totalPeriods: logs.length,
-      roi: roiVal,
-      avgSat: satCount > 0 ? satSum / satCount : 0,
-    };
-  }, [logs, client]);
 
   /* ══════════════ LOADING ══════════════ */
   if (loading) {
@@ -251,12 +217,12 @@ export default function DashboardPage() {
         {/* ── HERO STAT ── */}
         <section className="text-center py-6">
           <p className="text-emerald-400 text-4xl sm:text-5xl font-bold">
-            {fmt$(roiData?.dollar_value ?? totalMoney)}
+            {fmt$(roiData?.dollar_value ?? 0)}
           </p>
           <p className="text-slate-400 text-sm mt-2">
             {roiData
               ? `estimated value recovered ${period === "monthly" ? "this month" : "this week"}`
-              : "total recovered since deployment"}
+              : "connect your automations to start tracking"}
           </p>
         </section>
 
@@ -264,13 +230,13 @@ export default function DashboardPage() {
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard
             label="Hours Recovered"
-            value={`${roiData?.total_hours_saved ?? totalHours} hrs`}
-            highlight={parseFloat(roiData?.total_hours_saved ?? totalHours) > 0 ? "green" : undefined}
+            value={`${roiData?.total_hours_saved ?? 0} hrs`}
+            highlight={parseFloat(roiData?.total_hours_saved ?? 0) > 0 ? "green" : undefined}
           />
           <StatCard
             label="ROI"
-            value={`${roiData?.roi_percent ?? roi.toFixed(0)}%`}
-            highlight={parseFloat(roiData?.roi_percent ?? roi) >= 0 ? "green" : "red"}
+            value={roiData ? `${roiData.roi_percent}%` : "—"}
+            highlight={roiData ? (parseFloat(roiData.roi_percent) >= 0 ? "green" : "red") : undefined}
           />
           <StatCard
             label="Executions"
