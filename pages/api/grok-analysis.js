@@ -1,10 +1,35 @@
+import { Pool } from "pg";
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
 const GROK_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROK_MODEL   = "llama-3.3-70b-versatile";
 
 const SYSTEM_PROMPT = `You are a senior AI automation strategist and ROI analyst for Reflexity, \
 a premium AI automation community. You analyse client automation performance data and deliver \
 sharp, specific, actionable insights in a professional but warm tone. You are data-driven, \
-precise, and genuinely helpful. Never be generic. Reference specific numbers. Address them by name.`;
+precise, and genuinely helpful. Never be generic. Reference specific numbers.
+
+CRITICAL personalisation rules:
+- NEVER use a user ID (like RFX-XXXX) anywhere in your response. It is an internal code, not a name.
+- When you know the client's first name, use it naturally — in the headline, encouragement, and at most one other place.
+- Otherwise address the client as "you" / "your" throughout — warm and direct, like speaking to them face to face.
+- Do NOT say "the client" or refer to them in third person.`;
+
+/* ── look up real client name from DB ── */
+async function fetchClientName(code) {
+  try {
+    const { rows } = await pool.query(
+      "SELECT client_name FROM clients WHERE code = $1 LIMIT 1",
+      [code]
+    );
+    if (!rows.length) return null;
+    const full = rows[0].client_name?.trim();
+    return full ? full.split(" ")[0] : null;
+  } catch {
+    return null;
+  }
+}
 
 /* ── derive internal base URL from request ── */
 function baseUrl(req) {
@@ -16,8 +41,7 @@ function baseUrl(req) {
 /* ── build the user message sent to Grok ── */
 function buildUserMessage(data) {
   const {
-    user_id,
-    display_name,
+    first_name,
     period,
     total_executions,
     total_hours_saved,
@@ -29,7 +53,7 @@ function buildUserMessage(data) {
     daily_breakdown = [],
   } = data;
 
-  const name = display_name || user_id;
+  const addressAs = first_name ? first_name : `"you"/"your" (no name available — use second person throughout)`;
   const roiSign = Number(roi_percent) >= 0 ? "positive" : "negative";
 
   // Summarise by_category for the prompt
@@ -58,8 +82,7 @@ function buildUserMessage(data) {
 return ONLY a valid JSON object — no markdown, no code block, no extra text.
 
 CLIENT DATA:
-  User ID:            ${user_id}
-  Name:               ${name}
+  Address as:         ${addressAs}
   Period:             ${period}
   Total executions:   ${total_executions}
   Total hours saved:  ${total_hours_saved} hrs
@@ -170,14 +193,16 @@ export default async function handler(req, res) {
     }
     const roi = await roiRes.json();
 
-    /* ── Step 2: build prompt ── */
+    /* ── Step 2: look up real client name ── */
+    const firstName = await fetchClientName(uid);
+
+    /* ── Step 3: build prompt ── */
     const promptData = {
       ...roi,
-      display_name: uid,          // use user_id as display name; extend here if you add a names table
-      membership_cost: 37,        // default; get-roi already uses user_settings, this is prompt-only display
+      first_name: firstName,
     };
 
-    /* ── Step 3 + 4: call Grok ── */
+    /* ── Step 4 + 5: call Grok ── */
     const rawGrok = await callGrok(buildUserMessage(promptData));
 
     /* ── Step 5: parse safely ── */

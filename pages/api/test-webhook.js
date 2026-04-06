@@ -9,6 +9,9 @@ export default async function handler(req, res) {
   const host  = req.headers["x-forwarded-host"] || req.headers.host;
   const base  = `${proto}://${host}`;
 
+  // Accept a user_id query param for targeted tests; falls back to anonymous
+  const testUserId = req.query.user_id || "anonymous";
+
   const timestamp = new Date().toISOString();
   let webhookResult = null;
   let roiResult     = null;
@@ -20,8 +23,8 @@ export default async function handler(req, res) {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        user_id:       "RFX-TEST1",
-        workflow_name: "Email Responder",
+        user_id:       testUserId,
+        workflow_name: "Test Workflow",
         platform:      "internal-test",
       }),
     });
@@ -29,7 +32,7 @@ export default async function handler(req, res) {
 
     // 2. GET /api/get-roi
     const roiRes = await fetch(
-      `${base}/api/get-roi?user_id=RFX-TEST1&period=weekly`
+      `${base}/api/get-roi?user_id=${encodeURIComponent(testUserId)}&period=weekly`
     );
     roiResult = await roiRes.json();
 
