@@ -11,8 +11,7 @@ import FrequencyBadge from "@/components/FrequencyBadge";
 import StatusBadge from "@/components/StatusBadge";
 import TestimonialModal from "@/components/TestimonialModal";
 import MobileNav from "@/components/MobileNav";
-import { hasAlreadyLoggedThisPeriod, getNextLogDeadline } from "@/lib/periodUtils";
-import { fmt$, pluralize } from "@/lib/format";
+import { fmt$ } from "@/lib/format";
 
 /* ══════════════════════════════════════════
    DASHBOARD PAGE
@@ -26,7 +25,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [dismissedBanner, setDismissedBanner] = useState(false);
 
   /* ── period toggle ── */
   const [period, setPeriod] = useState("weekly");
@@ -121,14 +119,7 @@ export default function DashboardPage() {
 
   /* ── derived values ── */
   const logFrequency = client?.log_frequency || client?.tracking_frequency || "weekly";
-  const isMonthly = logFrequency === "monthly";
-  const periodWord = isMonthly ? "Month" : "Week";
   const isFrozen = client?.status === "frozen";
-  const alreadyLogged = hasAlreadyLoggedThisPeriod(logs, logFrequency);
-  const nextDeadline = getNextLogDeadline(logs, logFrequency);
-  const userTz = typeof Intl !== "undefined"
-    ? Intl.DateTimeFormat().resolvedOptions().timeZone
-    : "UTC";
 
   const greeting = useMemo(() => {
     const h = new Date().getHours();
@@ -261,10 +252,12 @@ export default function DashboardPage() {
         {/* ── HERO STAT ── */}
         <section className="text-center py-6">
           <p className="text-emerald-400 text-4xl sm:text-5xl font-bold">
-            {fmt$(totalMoney)}
+            {fmt$(roiData?.dollar_value ?? totalMoney)}
           </p>
           <p className="text-slate-400 text-sm mt-2">
-            total recovered since deployment
+            {roiData
+              ? `estimated value recovered ${period === "monthly" ? "this month" : "this week"}`
+              : "total recovered since deployment"}
           </p>
         </section>
 
@@ -272,23 +265,23 @@ export default function DashboardPage() {
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard
             label="Hours Recovered"
-            value={`${totalHours} hrs`}
+            value={`${roiData?.total_hours_saved ?? totalHours} hrs`}
+            highlight={parseFloat(roiData?.total_hours_saved ?? totalHours) > 0 ? "green" : undefined}
           />
           <StatCard
             label="ROI"
-            value={
-              <span className={roi >= 0 ? "text-emerald-400" : "text-red-400"}>
-                {roi.toFixed(0)}%
-              </span>
-            }
+            value={`${roiData?.roi_percent ?? roi.toFixed(0)}%`}
+            highlight={parseFloat(roiData?.roi_percent ?? roi) >= 0 ? "green" : "red"}
           />
           <StatCard
-            label="Periods Logged"
-            value={`${totalPeriods} ${pluralize(totalPeriods, isMonthly ? "month" : "week")}`}
+            label="Executions"
+            value={String(roiData?.total_executions ?? 0)}
+            subtext="workflow runs tracked"
           />
           <StatCard
-            label="Avg Satisfaction"
-            value={`${avgSat.toFixed(1)}/5 ⭐`}
+            label="Top Workflow"
+            value={roiData?.top_workflow || "—"}
+            subtext="most executed"
           />
         </section>
 
@@ -321,7 +314,7 @@ export default function DashboardPage() {
           {!grokLoading && !grokData && (
             <div className="px-5 py-8 text-center">
               <p className="text-slate-500 text-sm">No analysis available yet.</p>
-              <p className="text-slate-600 text-xs mt-1">Log workflow executions via n8n to see your AI insights.</p>
+              <p className="text-slate-600 text-xs mt-1">Log workflow executions via your automation platform (n8n, Make, Zapier etc.) to see your AI insights.</p>
             </div>
           )}
 
@@ -406,34 +399,8 @@ export default function DashboardPage() {
         {/* ── LOG HISTORY ── */}
         <LogList logs={logs} logFrequency={logFrequency} />
 
-        {/* ── ACTION BUTTONS (visible on md+ inline, hidden on mobile where nav takes over) ── */}
+        {/* ── ACTION BUTTONS ── */}
         <section className="hidden md:flex flex-wrap gap-4 pt-2">
-          {client.status === "active" && !alreadyLogged && (
-            <Link
-              href={`/log/${code}`}
-              className="inline-flex items-center justify-center h-11 px-6 rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-semibold transition-colors"
-            >
-              Log This {periodWord}
-            </Link>
-          )}
-          {client.status === "active" && alreadyLogged && (
-            <div className="self-center">
-              <p className="text-slate-400 text-sm">
-                Already logged this period. Come back next {periodWord.toLowerCase()}.
-              </p>
-              {nextDeadline && (
-                <p className="text-slate-500 text-xs mt-1">
-                  Next log opens{" "}
-                  {nextDeadline.toLocaleString("en-US", {
-                    timeZone: userTz,
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}{" "}
-                  ({userTz})
-                </p>
-              )}
-            </div>
-          )}
           <button
             onClick={() => setShowModal(true)}
             className="inline-flex items-center justify-center h-11 px-6 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 font-semibold transition-colors"
@@ -442,48 +409,6 @@ export default function DashboardPage() {
           </button>
         </section>
 
-        {/* ── MOBILE: inline "already logged" banner (dismissible) ── */}
-        {client.status === "active" && alreadyLogged && !dismissedBanner && (
-          <section className="md:hidden bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-3 relative">
-            <button
-              type="button"
-              onClick={() => setDismissedBanner(true)}
-              className="absolute top-2 right-2 text-slate-500 hover:text-slate-300 transition-colors p-1"
-              aria-label="Dismiss"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-            <p className="text-slate-400 text-sm text-center pr-6">
-              Already logged this period. Come back next {periodWord.toLowerCase()}.
-            </p>
-            {nextDeadline && (
-              <p className="text-slate-500 text-xs mt-1 text-center">
-                Next log opens{" "}
-                {nextDeadline.toLocaleString("en-US", {
-                  timeZone: userTz,
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}{" "}
-                ({userTz})
-              </p>
-            )}
-          </section>
-        )}
-
-        {/* ── MOBILE: fixed "Log This Week" CTA (only when not yet logged) ── */}
-        {client.status === "active" && !alreadyLogged && (
-          <section className="fixed bottom-14 left-0 right-0 z-30 bg-[#0F172A]/95 border-t border-[#334155] px-4 py-3 md:hidden">
-            <Link
-              href={`/log/${code}`}
-              className="flex items-center justify-center w-full h-11 rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-semibold transition-colors"
-            >
-              Log This {periodWord}
-            </Link>
-          </section>
-        )}
       </main>
 
       {/* ── MOBILE NAV ── */}
