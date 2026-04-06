@@ -4,9 +4,11 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
+import {
+  BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell,
+} from "recharts";
+
 import StatCard from "@/components/StatCard";
-import RoiChart from "@/components/RoiChart";
-import LogList from "@/components/LogList";
 import FrequencyBadge from "@/components/FrequencyBadge";
 import StatusBadge from "@/components/StatusBadge";
 import TestimonialModal from "@/components/TestimonialModal";
@@ -393,11 +395,72 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* ── ROI CHART ── */}
-        <RoiChart logs={logs} logFrequency={logFrequency} />
+        {/* ── DAILY ACTIVITY CHART ── */}
+        {roiData?.daily_breakdown?.length > 0 ? (
+          <section className="bg-[#1E293B] border border-[#334155] rounded-2xl p-5">
+            <h3 className="text-white font-semibold text-sm mb-4">
+              Daily Executions — {period === "monthly" ? "Last 30 Days" : "Last 7 Days"}
+            </h3>
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={roiData.daily_breakdown} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(d) => {
+                    const dt = new Date(d);
+                    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  }}
+                />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#1E293B", border: "1px solid #334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }}
+                  labelFormatter={(d) => new Date(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                  formatter={(v) => [`${v} run${v !== 1 ? "s" : ""}`, "Executions"]}
+                  cursor={{ fill: "rgba(108,99,255,0.08)" }}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                  {roiData.daily_breakdown.map((entry, i) => (
+                    <Cell key={i} fill={entry.count > 0 ? "#6C63FF" : "#1E293B"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </section>
+        ) : (
+          <section className="bg-[#1E293B] border border-[#334155] rounded-2xl p-5 text-center">
+            <p className="text-slate-500 text-sm">No executions yet this {period === "monthly" ? "month" : "week"}.</p>
+            <p className="text-slate-600 text-xs mt-1">
+              Connect your automation platform (n8n, Make, Zapier etc.) to start tracking.
+            </p>
+          </section>
+        )}
 
-        {/* ── LOG HISTORY ── */}
-        <LogList logs={logs} logFrequency={logFrequency} />
+        {/* ── EXECUTION BREAKDOWN TABLE ── */}
+        {roiData?.by_category?.length > 0 && (
+          <section className="bg-[#1E293B] border border-[#334155] rounded-2xl p-5">
+            <h3 className="text-white font-semibold text-sm mb-4">Runs by Category</h3>
+            <div className="space-y-3">
+              {roiData.by_category.map((cat) => {
+                const max = roiData.by_category[0]?.count ?? 1;
+                const pct = max > 0 ? Math.round((cat.count / max) * 100) : 0;
+                return (
+                  <div key={cat.category} className="flex items-center gap-3">
+                    <p className="text-slate-300 text-xs w-28 shrink-0 truncate capitalize">
+                      {cat.category || "Uncategorised"}
+                    </p>
+                    <div className="flex-1 bg-[#0F172A] rounded-full h-2 overflow-hidden">
+                      <div className="h-2 rounded-full bg-[#6C63FF]" style={{ width: `${pct}%` }} />
+                    </div>
+                    <p className="text-slate-400 text-xs w-14 text-right shrink-0">
+                      {cat.count} run{cat.count !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* ── ACTION BUTTONS ── */}
         <section className="hidden md:flex flex-wrap gap-4 pt-2">
