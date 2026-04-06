@@ -60,12 +60,13 @@ export default async function handler(req, res) {
       [String(user_id).trim(), days]
     );
 
-    // User settings (hourly_rate, membership_cost) — silently fall back if table absent
-    let hourlyRate = 50;
-    let membershipCost = 37;
+    // User settings (hourly_rate) — silently fall back if table absent
+    // DEFAULT_HOURLY_RATE: industry average for knowledge-worker automation time value
+    const DEFAULT_HOURLY_RATE = 50;
+    let hourlyRate = DEFAULT_HOURLY_RATE;
     try {
       const settingsResult = await pool.query(
-        `SELECT hourly_rate, membership_cost
+        `SELECT hourly_rate
          FROM   user_settings
          WHERE  user_id = $1
          LIMIT  1`,
@@ -73,20 +74,29 @@ export default async function handler(req, res) {
       );
       if (settingsResult.rows.length > 0) {
         const s = settingsResult.rows[0];
-        hourlyRate     = Number(s.hourly_rate)     || 50;
-        membershipCost = Number(s.membership_cost) || 37;
+        hourlyRate = Number(s.hourly_rate) || DEFAULT_HOURLY_RATE;
       }
     } catch {
-      // user_settings table may not exist yet — use defaults
+      // user_settings table may not exist yet — use default
     }
 
     // ── Calculated metrics ──────────────────────────────────────────
+    // dollar_value  = hours saved × hourly rate (what the saved time is worth)
+    // roi_ratio     = dollar_value ÷ hourly_rate (purely automation efficiency: hours freed)
+    // roi_percent   = how much value was generated relative to a single hour of their time
+    //                 = (dollar_value / hourly_rate - 1) * 100
+    //                 This is always based on the user's own automations, never on our fees.
     const totalExecutions   = executions.length;
     const totalMinutesSaved = executions.reduce((sum, e) => sum + Number(e.minutes_saved), 0);
     const totalHoursSaved   = parseFloat((totalMinutesSaved / 60).toFixed(2));
     const dollarValue       = parseFloat((totalHoursSaved * hourlyRate).toFixed(2));
-    const roiRatio          = parseFloat((dollarValue / membershipCost).toFixed(1));
-    const roiPercent        = (((dollarValue - membershipCost) / membershipCost) * 100).toFixed(0);
+    // roi_ratio: how many "billable hours" were freed (dollar value ÷ hourly rate = hours)
+    const roiRatio          = parseFloat(totalHoursSaved.toFixed(1));
+    // roi_percent: automation return relative to one hour of work
+    // Guard against divide-by-zero if hourlyRate is somehow 0
+    const roiPercent        = hourlyRate > 0
+      ? (((dollarValue / hourlyRate) - 1) * 100).toFixed(0)
+      : "0";
 
     // Top workflow by execution count
     const workflowCounts = {};
