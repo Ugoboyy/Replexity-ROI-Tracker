@@ -24,7 +24,6 @@ function buildUserMessage(data) {
     dollar_value,
     roi_ratio,
     roi_percent,
-    membership_cost,
     top_workflow,
     by_category = [],
     daily_breakdown = [],
@@ -67,7 +66,6 @@ CLIENT DATA:
   Dollar value:       $${dollar_value}
   ROI ratio:          ${roi_ratio}x
   ROI percent:        ${roi_percent}% (${roiSign})
-  Membership cost:    $${membership_cost}/month
   Top workflow:       ${top_workflow || "N/A"}
 
 By category:
@@ -85,7 +83,7 @@ Return ONLY this JSON shape with no other text:
   "top_insight":       "<most important observation, max 2 sentences, reference exact numbers>",
   "whats_working":     "<which automation is delivering most value and why>",
   "opportunity":       "<one specific workflow they should add next with clear reasoning>",
-  "roi_verdict":       "<is membership paying off? compare dollar_value to membership_cost explicitly>",
+  "roi_verdict":       "<is the automation delivering real value? assess dollar_value vs hours saved vs effort invested — be specific about whether the numbers justify continuing and scaling>",
   "trend":             "<exactly one of: growing | stable | declining>",
   "next_action":       "<one concrete step they can take this week>",
   "encouragement":     "<one genuine, specific motivational sentence using their name and real numbers>"
