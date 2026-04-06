@@ -9,7 +9,6 @@ import {
 } from "recharts";
 
 import StatCard from "@/components/StatCard";
-import FrequencyBadge from "@/components/FrequencyBadge";
 import StatusBadge from "@/components/StatusBadge";
 import TestimonialModal from "@/components/TestimonialModal";
 import MobileNav from "@/components/MobileNav";
@@ -193,8 +192,7 @@ export default function DashboardPage() {
           className="h-[58px] md:h-[60px] w-auto shrink-0"
         />
         <div className="flex items-center gap-1.5 shrink-0">
-          <FrequencyBadge frequency={logFrequency} />
-          <StatusBadge status={client.status} />
+          <StatusBadge status={client.status} executions={roiData ? roiData.total_executions : undefined} />
           <button
             onClick={() => router.push("/")}
             className="hidden md:flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg text-xs text-slate-300 border border-slate-600 hover:bg-slate-700 transition-colors"
