@@ -27,8 +27,10 @@ export default async function handler(req, res) {
     async function fetchExecutions(whereClause, params) {
       const withJoin = `
         SELECT e.id, e.user_id, e.workflow_name, e.created_at,
-               COALESCE(wb.minutes_saved, 5)           AS minutes_saved,
-               COALESCE(wb.category, 'Uncategorised')  AS category
+               COALESCE(wb.minutes_saved,
+                        (e.metadata->>'minutes_saved')::int,
+                        5)                               AS minutes_saved,
+               COALESCE(wb.category, 'Uncategorised')   AS category
         FROM   executions e
         LEFT JOIN workflow_benchmarks wb
                ON LOWER(TRIM(e.workflow_name)) = LOWER(TRIM(wb.workflow_name))
@@ -41,7 +43,7 @@ export default async function handler(req, res) {
         if (err.message && err.message.includes("workflow_benchmarks")) {
           const noJoin = `
             SELECT e.id, e.user_id, e.workflow_name, e.created_at,
-                   5               AS minutes_saved,
+                   COALESCE((e.metadata->>'minutes_saved')::int, 5) AS minutes_saved,
                    'Uncategorised' AS category
             FROM   executions e
             WHERE  ${whereClause}`;
@@ -53,19 +55,10 @@ export default async function handler(req, res) {
     }
 
     // Fetch this user's executions for the period
-    let executions = await fetchExecutions(
+    const executions = await fetchExecutions(
       "e.user_id = $1 AND e.created_at >= NOW() - ($2 * INTERVAL '1 day')",
       [String(user_id).trim(), days]
     );
-
-    // Fallback: supplement with anonymous rows when user has < 3 executions
-    if (executions.length < 3) {
-      const anonRows = await fetchExecutions(
-        "e.user_id = 'anonymous' AND e.created_at >= NOW() - ($1 * INTERVAL '1 day')",
-        [days]
-      );
-      executions = [...executions, ...anonRows];
-    }
 
     // User settings (hourly_rate, membership_cost) — silently fall back if table absent
     let hourlyRate = 50;

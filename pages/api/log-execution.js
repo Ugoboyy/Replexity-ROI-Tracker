@@ -22,6 +22,7 @@ export default async function handler(req, res) {
       user_id,
       workflow_name,
       platform = "n8n",
+      minutes_saved,
       metadata = null,
     } = req.body || {};
 
@@ -33,6 +34,14 @@ export default async function handler(req, res) {
     const claimed = Boolean(rawId && rawId !== "anonymous");
     const resolvedId = claimed ? rawId : "anonymous";
 
+    // Merge minutes_saved into metadata so get-roi can read it
+    const parsedMinutes = minutes_saved ? parseInt(minutes_saved, 10) : null;
+    const mergedMeta = {
+      ...(metadata && typeof metadata === "object" ? metadata : {}),
+      ...(parsedMinutes && parsedMinutes > 0 ? { minutes_saved: parsedMinutes } : {}),
+    };
+    const metaToStore = Object.keys(mergedMeta).length > 0 ? JSON.stringify(mergedMeta) : null;
+
     await pool.query(
       `INSERT INTO executions (user_id, workflow_name, platform, metadata, created_at)
        VALUES ($1, $2, $3, $4, NOW())`,
@@ -40,7 +49,7 @@ export default async function handler(req, res) {
         resolvedId,
         workflow_name.trim(),
         String(platform).trim(),
-        metadata ? JSON.stringify(metadata) : null,
+        metaToStore,
       ]
     );
 

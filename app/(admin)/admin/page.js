@@ -6,7 +6,8 @@ import StatusBadge from "@/components/StatusBadge";
 
 import { fmt$ } from "@/lib/format";
 
-const ADMIN_PASSWORD = (process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "").trim();
+// NOTE: no password constant here — the typed password is sent directly
+// to the API which validates it server-side against ADMIN_KEY env var.
 
 export default function AdminPage() {
   /* ── auth ── */
@@ -54,7 +55,7 @@ export default function AdminPage() {
     setListLoading(true);
     try {
       const res = await fetch("/api/clients/all", {
-        headers: { "X-Admin-Key": ADMIN_PASSWORD },
+        headers: { "X-Admin-Key": password },
       });
       const data = await res.json();
       setClients(data.clients || []);
@@ -65,15 +66,24 @@ export default function AdminPage() {
     }
   }
 
-  /* ── password check ── */
-  function handleLogin(e) {
+  /* ── password check — verified server-side via API ── */
+  async function handleLogin(e) {
     e.preventDefault();
-    if (password.trim() === ADMIN_PASSWORD) {
-      setAuthenticated(true);
-      setAuthError("");
-      sessionStorage.setItem("reflexity_admin", "true");
-    } else {
-      setAuthError("Incorrect password.");
+    setAuthError("");
+    try {
+      const res = await fetch("/api/clients/all", {
+        headers: { "X-Admin-Key": password.trim() },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAuthenticated(true);
+        setClients(data.clients || []);
+        sessionStorage.setItem("reflexity_admin", "true");
+      } else {
+        setAuthError("Incorrect password.");
+      }
+    } catch {
+      setAuthError("Connection error. Please try again.");
     }
   }
 
@@ -95,7 +105,7 @@ export default function AdminPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Key": ADMIN_PASSWORD,
+          "X-Admin-Key": password,
         },
         body: JSON.stringify({
           action: "create",
@@ -145,7 +155,7 @@ export default function AdminPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Key": ADMIN_PASSWORD,
+          "X-Admin-Key": password,
         },
         body: JSON.stringify({ action, code }),
       });
