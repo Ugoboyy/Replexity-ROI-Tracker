@@ -193,6 +193,22 @@ export default function DashboardPage() {
           className="h-[58px] md:h-[60px] w-auto shrink-0"
         />
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Period toggle — mobile header only; desktop gets it in the greeting block */}
+          <div className="md:hidden flex items-center bg-[#0F172A] border border-[#334155] rounded-full p-[3px] mr-1">
+            {["weekly", "monthly"].map((p) => (
+              <button
+                key={p}
+                onClick={() => handlePeriodChange(p)}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-colors ${
+                  period === p
+                    ? "bg-[#6C63FF] text-white shadow-sm"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {p === "weekly" ? "Week" : "Month"}
+              </button>
+            ))}
+          </div>
           <FrequencyBadge frequency={logFrequency} />
           <StatusBadge status={client.status} />
           <button
@@ -222,9 +238,9 @@ export default function DashboardPage() {
       <main className="max-w-6xl mx-auto px-4 pb-28 md:pb-20 space-y-6 mt-4">
 
         {/* ── DYNAMIC GREETING + DATE ── */}
-        <div className="flex items-start justify-between gap-4 mb-[25px]">
-          {/* Period toggle pill */}
-          <div className="flex items-center bg-[#1E293B] border border-[#334155] rounded-full p-1 shrink-0 self-start mt-0.5">
+        <div className="flex items-start justify-between pr-1 mb-[25px]">
+          {/* Desktop-only period toggle */}
+          <div className="hidden md:flex items-center bg-[#0F172A] border border-[#334155] rounded-full p-[3px]">
             {["weekly", "monthly"].map((p) => (
               <button
                 key={p}
@@ -239,8 +255,6 @@ export default function DashboardPage() {
               </button>
             ))}
           </div>
-
-          {/* Greeting + date */}
           <div className="text-right space-y-1">
             <p className="text-white font-semibold text-[14px] lg:text-[20px] leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis tracking-[-0.01em]">
               {greeting}, {client.client_name}
@@ -288,7 +302,7 @@ export default function DashboardPage() {
         </section>
 
         {/* ── GROK ANALYSIS CARD ── */}
-        <section className="bg-[#1E293B] border border-[#6C63FF]/30 rounded-2xl overflow-hidden">
+        <section id="ai-analysis" className="bg-[#1E293B] border border-[#6C63FF]/30 rounded-2xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[#334155] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-[#6C63FF] text-lg">✦</span>
@@ -480,6 +494,7 @@ export default function DashboardPage() {
         clientCode={code}
         onShare={() => setShowModal(true)}
         onSignOut={() => router.push("/")}
+        onInsights={() => document.getElementById("ai-analysis")?.scrollIntoView({ behavior: "smooth" })}
       />
 
       {/* ── TESTIMONIAL MODAL ── */}
@@ -487,11 +502,8 @@ export default function DashboardPage() {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         client={client}
-        totalMoney={totalMoney}
-        totalHours={totalHours}
-        totalPeriods={totalPeriods}
-        avgSatisfaction={avgSat}
-        logFrequency={logFrequency}
+        roiData={roiData}
+        period={period}
       />
     </>
   );

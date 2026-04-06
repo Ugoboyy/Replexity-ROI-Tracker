@@ -3,41 +3,34 @@
 import { useState } from "react";
 import { fmt$ } from "@/lib/format";
 
-function Stars({ count }) {
-  const full = Math.round(count || 0);
-  return (
-    <span className="text-yellow-400 text-xl tracking-wider">
-      {"★".repeat(Math.min(full, 5))}
-      {"☆".repeat(Math.max(5 - full, 0))}
-    </span>
-  );
-}
-
 export default function TestimonialModal({
   isOpen,
   onClose,
   client,
-  totalMoney,
-  totalHours,
-  totalPeriods,
-  avgSatisfaction,
-  logFrequency,
+  roiData,
+  period,
 }) {
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
 
-  const periodWord = totalPeriods === 1
-    ? (logFrequency === "monthly" ? "month" : "week")
-    : (logFrequency === "monthly" ? "months" : "weeks");
-  const rec = avgSatisfaction >= 4 ? "Highly recommended." : "Solid results.";
+  const name        = client?.client_name || "Member";
+  const executions  = roiData?.total_executions ?? 0;
+  const hoursSaved  = parseFloat(roiData?.total_hours_saved ?? 0);
+  const dollarValue = parseFloat(roiData?.dollar_value ?? 0);
+  const roiPercent  = parseFloat(roiData?.roi_percent ?? 0);
+  const topWorkflow = roiData?.top_workflow;
+  const periodLabel = period === "monthly" ? "month" : "week";
+  const roiPositive = roiPercent >= 0;
 
   const shareText = [
-    `${totalPeriods} ${periodWord} using Reflexity automations.`,
-    `Saved ${fmt$(totalMoney)} in total.`,
-    `Recovered ${totalHours} hours.`,
-    rec,
-  ].join("\n");
+    `My automations saved me ${fmt$(dollarValue)} this ${periodLabel} — tracked with Reflexity.`,
+    `${executions} workflow run${executions !== 1 ? "s" : ""} logged. ${hoursSaved} hours recovered.`,
+    topWorkflow ? `Top workflow: ${topWorkflow}.` : null,
+    roiPositive
+      ? `ROI: +${roiPercent.toFixed(0)}% on my membership. 🚀`
+      : `Building momentum — ${Math.abs(roiPercent).toFixed(0)}% to go to break even.`,
+  ].filter(Boolean).join("\n");
 
   function handleCopy() {
     navigator.clipboard.writeText(shareText);
@@ -96,19 +89,38 @@ export default function TestimonialModal({
           </p>
 
           <p className="text-slate-200 text-lg font-medium">
-            {totalPeriods} {periodWord} with Reflexity
+            {name}&apos;s {periodLabel} in automation
           </p>
 
           <p className="text-emerald-400 text-4xl font-bold">
-            {fmt$(totalMoney)}
+            {fmt$(dollarValue)}
           </p>
-          <p className="text-slate-400 text-sm -mt-1">total recovered</p>
+          <p className="text-slate-400 text-sm -mt-1">estimated value recovered</p>
 
-          <p className="text-slate-200 text-base">
-            {totalHours} hours recovered
-          </p>
+          <div className="flex items-center justify-center gap-4 pt-1">
+            <div>
+              <p className="text-white font-bold text-xl">{executions}</p>
+              <p className="text-slate-500 text-xs">runs</p>
+            </div>
+            <div className="w-px h-8 bg-slate-700" />
+            <div>
+              <p className="text-white font-bold text-xl">{hoursSaved}h</p>
+              <p className="text-slate-500 text-xs">saved</p>
+            </div>
+            <div className="w-px h-8 bg-slate-700" />
+            <div>
+              <p className={`font-bold text-xl ${roiPositive ? "text-emerald-400" : "text-amber-400"}`}>
+                {roiPositive ? "+" : ""}{roiPercent.toFixed(0)}%
+              </p>
+              <p className="text-slate-500 text-xs">ROI</p>
+            </div>
+          </div>
 
-          <Stars count={avgSatisfaction} />
+          {topWorkflow && (
+            <p className="text-slate-400 text-xs pt-1">
+              Top workflow: <span className="text-slate-200">{topWorkflow}</span>
+            </p>
+          )}
 
           <p className="text-slate-600 text-xs pt-1">Reflexity ROI Tracker</p>
         </div>
