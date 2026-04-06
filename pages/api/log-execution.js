@@ -19,7 +19,7 @@ export default async function handler(req, res) {
 
   try {
     const {
-      user_id = "anonymous",
+      user_id,
       workflow_name,
       platform = "n8n",
       metadata = null,
@@ -29,11 +29,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "workflow_name is required" });
     }
 
+    const rawId = user_id && String(user_id).trim();
+    const claimed = Boolean(rawId && rawId !== "anonymous");
+    const resolvedId = claimed ? rawId : "anonymous";
+
     await pool.query(
       `INSERT INTO executions (user_id, workflow_name, platform, metadata, created_at)
        VALUES ($1, $2, $3, $4, NOW())`,
       [
-        String(user_id).trim(),
+        resolvedId,
         workflow_name.trim(),
         String(platform).trim(),
         metadata ? JSON.stringify(metadata) : null,
@@ -42,8 +46,9 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
+      claimed,
       logged: {
-        user_id: String(user_id).trim(),
+        user_id: resolvedId,
         workflow_name: workflow_name.trim(),
         platform: String(platform).trim(),
       },

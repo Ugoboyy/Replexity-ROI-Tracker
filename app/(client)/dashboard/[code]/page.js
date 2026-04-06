@@ -28,6 +28,22 @@ export default function DashboardPage() {
   const [showModal, setShowModal] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
 
+  /* ── period toggle ── */
+  const [period, setPeriod] = useState("weekly");
+  const [periodReady, setPeriodReady] = useState(false);
+
+  /* ── automation ROI + Grok ── */
+  const [roiData, setRoiData] = useState(null);
+  const [grokData, setGrokData] = useState(null);
+  const [grokLoading, setGrokLoading] = useState(false);
+
+  function handlePeriodChange(newPeriod) {
+    setPeriod(newPeriod);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("reflexity_period", newPeriod);
+    }
+  }
+
   /* ── fetch data ── */
   useEffect(() => {
     async function load() {
@@ -65,6 +81,43 @@ export default function DashboardPage() {
     }
     load();
   }, [code]);
+
+  /* ── restore period from localStorage ── */
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("reflexity_period");
+      if (saved === "monthly" || saved === "weekly") setPeriod(saved);
+    }
+    setPeriodReady(true);
+  }, []);
+
+  /* ── fetch automation ROI + Grok when client or period changes ── */
+  useEffect(() => {
+    if (!client || !periodReady) return;
+    const userId = client.code || client.user_id || code;
+
+    fetch(`/api/get-roi?user_id=${encodeURIComponent(userId)}&period=${period}`)
+      .then((r) => r.json())
+      .then((data) => setRoiData(data.error ? null : data))
+      .catch(() => setRoiData(null));
+
+    setGrokLoading(true);
+    setGrokData(null);
+    fetch(`/api/grok-analysis?user_id=${encodeURIComponent(userId)}&period=${period}`)
+      .then((r) => r.json())
+      .then((data) => setGrokData(data.error ? null : data))
+      .catch(() => setGrokData(null))
+      .finally(() => setGrokLoading(false));
+  }, [client, period, periodReady, code]);
+
+  /* ── dynamic page title ── */
+  useEffect(() => {
+    if (client) {
+      const name = client.client_name || "Dashboard";
+      const label = period === "monthly" ? "Monthly ROI" : "Weekly ROI";
+      document.title = `${label} — ${name}`;
+    }
+  }, [client, period]);
 
   /* ── derived values ── */
   const logFrequency = client?.log_frequency || client?.tracking_frequency || "weekly";
@@ -176,13 +229,33 @@ export default function DashboardPage() {
       <main className="max-w-6xl mx-auto px-4 pb-28 md:pb-20 space-y-6 mt-4">
 
         {/* ── DYNAMIC GREETING + DATE ── */}
-        <div className="text-right pr-1 mb-[25px] space-y-1">
-          <p className="text-white font-semibold text-[14px] lg:text-[20px] leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis tracking-[-0.01em]">
-            {greeting}, {client.client_name}
-          </p>
-          <p className="text-slate-400 lg:text-slate-400/80 font-normal text-[12px] lg:text-[18px] leading-[1.2]">
-            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-          </p>
+        <div className="flex items-start justify-between gap-4 mb-[25px]">
+          {/* Period toggle pill */}
+          <div className="flex items-center bg-[#1E293B] border border-[#334155] rounded-full p-1 shrink-0 self-start mt-0.5">
+            {["weekly", "monthly"].map((p) => (
+              <button
+                key={p}
+                onClick={() => handlePeriodChange(p)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                  period === p
+                    ? "bg-[#6C63FF] text-white shadow-sm"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {p === "weekly" ? "This Week" : "This Month"}
+              </button>
+            ))}
+          </div>
+
+          {/* Greeting + date */}
+          <div className="text-right space-y-1">
+            <p className="text-white font-semibold text-[14px] lg:text-[20px] leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis tracking-[-0.01em]">
+              {greeting}, {client.client_name}
+            </p>
+            <p className="text-slate-400 lg:text-slate-400/80 font-normal text-[12px] lg:text-[18px] leading-[1.2]">
+              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            </p>
+          </div>
         </div>
 
         {/* ── HERO STAT ── */}
@@ -217,6 +290,114 @@ export default function DashboardPage() {
             label="Avg Satisfaction"
             value={`${avgSat.toFixed(1)}/5 ⭐`}
           />
+        </section>
+
+        {/* ── GROK ANALYSIS CARD ── */}
+        <section className="bg-[#1E293B] border border-[#6C63FF]/30 rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#334155] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[#6C63FF] text-lg">✦</span>
+              <h2 className="text-white font-semibold text-sm">
+                AI Analysis — {period === "monthly" ? "This Month" : "This Week"}
+              </h2>
+            </div>
+            {roiData && (
+              <span className="text-slate-500 text-xs">
+                {roiData.total_executions ?? 0} automation run{roiData.total_executions !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
+          {grokLoading && (
+            <div className="flex items-center justify-center gap-3 py-12">
+              <svg className="animate-spin h-5 w-5 text-[#6C63FF]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              <p className="text-slate-400 text-sm">Analysing your automations…</p>
+            </div>
+          )}
+
+          {!grokLoading && !grokData && (
+            <div className="px-5 py-8 text-center">
+              <p className="text-slate-500 text-sm">No analysis available yet.</p>
+              <p className="text-slate-600 text-xs mt-1">Log workflow executions via n8n to see your AI insights.</p>
+            </div>
+          )}
+
+          {!grokLoading && grokData?.analysis && (
+            <div className="px-5 py-5 space-y-5">
+              {/* Headline + score */}
+              <div className="flex items-start justify-between gap-4">
+                <p className="text-white font-semibold text-base leading-snug flex-1">
+                  {grokData.analysis.headline}
+                </p>
+                <div className="shrink-0 text-center">
+                  <p className={`text-2xl font-bold ${
+                    grokData.analysis.performance_score >= 70 ? "text-emerald-400"
+                    : grokData.analysis.performance_score >= 40 ? "text-amber-400"
+                    : "text-red-400"
+                  }`}>{grokData.analysis.performance_score}</p>
+                  <p className="text-slate-500 text-[10px] uppercase tracking-wide">Score</p>
+                </div>
+              </div>
+
+              {/* Trend badge */}
+              {grokData.analysis.trend && (
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                  grokData.analysis.trend === "growing"   ? "bg-emerald-900/40 text-emerald-400 border border-emerald-700/40"
+                  : grokData.analysis.trend === "declining" ? "bg-red-900/40 text-red-400 border border-red-700/40"
+                  : "bg-slate-800 text-slate-400 border border-slate-700"
+                }`}>
+                  {grokData.analysis.trend === "growing" ? "↑" : grokData.analysis.trend === "declining" ? "↓" : "→"}
+                  {" "}{grokData.analysis.trend.charAt(0).toUpperCase() + grokData.analysis.trend.slice(1)}
+                </span>
+              )}
+
+              {/* Insight rows */}
+              {[
+                { label: "Top Insight",    value: grokData.analysis.top_insight },
+                { label: "What's Working", value: grokData.analysis.whats_working },
+                { label: "ROI Verdict",    value: grokData.analysis.roi_verdict },
+                { label: "Opportunity",    value: grokData.analysis.opportunity },
+                { label: "Next Action",    value: grokData.analysis.next_action },
+              ].filter((r) => r.value).map((row) => (
+                <div key={row.label} className="border-t border-[#334155] pt-4">
+                  <p className="text-[#6C63FF] text-xs font-semibold uppercase tracking-wider mb-1.5">{row.label}</p>
+                  <p className="text-slate-300 text-sm leading-relaxed">{row.value}</p>
+                </div>
+              ))}
+
+              {/* Encouragement */}
+              {grokData.analysis.encouragement && (
+                <div className="bg-[#6C63FF]/10 border border-[#6C63FF]/20 rounded-xl px-4 py-3">
+                  <p className="text-[#a5a0ff] text-sm italic leading-relaxed">
+                    &ldquo;{grokData.analysis.encouragement}&rdquo;
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fallback: raw stats when Grok parse failed */}
+          {!grokLoading && grokData?.fallback === true && roiData && (
+            <div className="px-5 py-5">
+              <p className="text-amber-400 text-xs mb-3">AI analysis unavailable — showing raw stats:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: "Executions",  value: roiData.total_executions },
+                  { label: "Hours Saved", value: `${roiData.total_hours_saved} hrs` },
+                  { label: "Value",       value: `$${roiData.dollar_value}` },
+                  { label: "ROI",         value: `${roiData.roi_percent}%` },
+                ].map((s) => (
+                  <div key={s.label} className="bg-[#0F172A] rounded-xl px-3 py-3 text-center">
+                    <p className="text-white font-bold text-lg">{s.value}</p>
+                    <p className="text-slate-500 text-xs mt-0.5">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* ── ROI CHART ── */}
