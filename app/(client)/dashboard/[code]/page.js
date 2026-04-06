@@ -193,22 +193,6 @@ export default function DashboardPage() {
           className="h-[58px] md:h-[60px] w-auto shrink-0"
         />
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Period toggle — mobile header only; desktop gets it in the greeting block */}
-          <div className="md:hidden flex items-center bg-[#0F172A] border border-[#334155] rounded-full p-[3px] mr-1">
-            {["weekly", "monthly"].map((p) => (
-              <button
-                key={p}
-                onClick={() => handlePeriodChange(p)}
-                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-colors ${
-                  period === p
-                    ? "bg-[#6C63FF] text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                {p === "weekly" ? "Week" : "Month"}
-              </button>
-            ))}
-          </div>
           <FrequencyBadge frequency={logFrequency} />
           <StatusBadge status={client.status} />
           <button
@@ -239,19 +223,20 @@ export default function DashboardPage() {
 
         {/* ── DYNAMIC GREETING + DATE ── */}
         <div className="flex items-start justify-between pr-1 mb-[25px]">
-          {/* Desktop-only period toggle */}
-          <div className="hidden md:flex items-center bg-[#0F172A] border border-[#334155] rounded-full p-[3px]">
+          {/* Period toggle — left side, compact on mobile, full labels on desktop */}
+          <div className="flex items-center bg-[#0F172A] border border-[#334155] rounded-full p-[3px]">
             {["weekly", "monthly"].map((p) => (
               <button
                 key={p}
                 onClick={() => handlePeriodChange(p)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                className={`px-3 py-1 rounded-full text-[11px] md:px-4 md:py-1.5 md:text-xs font-semibold transition-colors ${
                   period === p
                     ? "bg-[#6C63FF] text-white shadow-sm"
                     : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                {p === "weekly" ? "This Week" : "This Month"}
+                <span className="md:hidden">{p === "weekly" ? "Week" : "Month"}</span>
+                <span className="hidden md:inline">{p === "weekly" ? "This Week" : "This Month"}</span>
               </button>
             ))}
           </div>
